@@ -1,0 +1,19 @@
+opam-version: "1.2"
+name: "process"
+version: "0.1.0"
+maintainer: "David Sheets <sheets@alum.mit.edu>"
+authors: "David Sheets <sheets@alum.mit.edu>"
+homepage: "https://github.com/dsheets/ocaml-process"
+bug-reports: "https://github.com/dsheets/ocaml-process/issues"
+license: "ISC"
+dev-repo: "https://github.com/dsheets/ocaml-process.git"
+build: [
+  [make]
+]
+install: [make "install"]
+remove: ["ocamlfind" "remove" "process"]
+depends: [
+  "ocamlfind" {build}
+  "ocamlbuild" {build}
+  "base-unix"
+]
