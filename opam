@@ -16,4 +16,5 @@ depends: [
   "ocamlfind" {build}
   "ocamlbuild" {build}
   "base-unix"
+  "base-bytes"
 ]
