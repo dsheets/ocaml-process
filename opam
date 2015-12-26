@@ -18,3 +18,4 @@ depends: [
   "base-unix"
   "base-bytes"
 ]
+available: [ ocaml-version >= "4.01.0" ]
