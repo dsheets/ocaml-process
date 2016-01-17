@@ -7,6 +7,7 @@ homepage: "https://github.com/dsheets/ocaml-process"
 bug-reports: "https://github.com/dsheets/ocaml-process/issues"
 license: "ISC"
 dev-repo: "https://github.com/dsheets/ocaml-process.git"
+tags: [ "process" "subprocess" "command" "system" ]
 build: [
   [make]
 ]
