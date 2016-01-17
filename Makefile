@@ -21,7 +21,15 @@ ARCHIVES:=_build/lib/$(MOD_NAME).a
 build:
 	$(OCAMLBUILD) $(PRODUCTS)
 
-test: build
+test_%.native: lib_test/%.ml
+	$(OCAMLBUILD) lib_test/$*.native
+	mv $*.native test_$*.native
+
+TEST_HELPERS=\
+	megabyte_writer kilobyte_writer\
+	empty_out nl_out trail_nl_out start_nl_out interleave_err_out
+
+test: build $(addprefix test_,$(addsuffix .native, $(TEST_HELPERS)))
 	$(OCAMLBUILD) lib_test/test.native
 	./test.native
 

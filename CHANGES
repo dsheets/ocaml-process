@@ -1,2 +1,6 @@
+0.2.0 (2016-01-17):
+* Fixed assumptions regarding subprocess I/O (#2 from aantron)
+* Added Process.Exit.error_to_string
+
 0.1.0 (2015-12-25):
 * Initial public release

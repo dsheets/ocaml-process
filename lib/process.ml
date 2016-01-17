@@ -116,6 +116,11 @@ module Exit = struct
     | Kill k -> Printf.sprintf "kill %s" (Signal.to_string k)
     | Stop k -> Printf.sprintf "stop %s" (Signal.to_string k)
 
+  let error_to_string { cwd; command; args; status } =
+    let args = Array.map (Printf.sprintf "%S") args in
+    let args_s = String.concat "; " (Array.to_list args) in
+    Printf.sprintf "%s [|%s|] in %s: %s" command args_s cwd (to_string status)
+
   let check ?(exit_status=[0]) command args = function
     | Exit k when List.mem k exit_status -> ()
     | status ->
@@ -160,8 +165,42 @@ module Blocking : S with type 'a io = 'a = struct
     with Unix.Unix_error (Unix.EINTR,"waitpid","") ->
       waitpid_retry flags pid
 
-  let execute prog args ~stdin input_fn =
-    let input = stdin in
+  let io_from_fd fds fn fd =
+    let closed = fn fd in
+    if closed
+    then List.filter ((<>) fd) fds
+    else fds
+
+  let select_io
+      ~input_stdout ~stdout
+      ~input_stderr ~stderr
+      ~output_stdin ~stdin
+      ~read_fds ~write_fds =
+    let rec loop ~read_fds ~write_fds =
+      if read_fds <> [] || write_fds <> []
+      then
+        let ready_read, ready_write, _ready_exn =
+          Unix.select read_fds write_fds [] ~-.1.
+        in
+        match ready_read with
+        | fd::_ when fd = stdout ->
+          let read_fds = io_from_fd read_fds input_stdout fd in
+          loop ~read_fds ~write_fds
+        | fd::_ when fd = stderr ->
+          let read_fds = io_from_fd read_fds input_stderr fd in
+          loop ~read_fds ~write_fds
+        | _::_ -> failwith "unexpected read fd" (* TODO: ? *)
+        | [] -> match ready_write with
+          | fd::_ ->
+            let write_fds = io_from_fd write_fds output_stdin fd in
+            loop ~read_fds ~write_fds
+          | [] -> failwith "select failed" (* TODO: ? *)
+    in
+    let sigpipe = Sys.(signal sigpipe Signal_ignore) in
+    loop ~read_fds ~write_fds;
+    Sys.(set_signal sigpipe) sigpipe
+
+  let execute prog args ~output_stdin ~input_stdout ~input_stderr =
     let in_fd, stdin = Unix.pipe () in
     let stdout, out_fd = Unix.pipe () in
     let stderr, err_fd = Unix.pipe () in
@@ -171,39 +210,77 @@ module Blocking : S with type 'a io = 'a = struct
     let args = Array.append [|prog|] args in
     let pid = Unix.create_process prog args in_fd out_fd err_fd in
     Unix.close in_fd;
-    let len = Bytes.length input in
-    let n = Unix.write stdin input 0 len in
-    assert (n = len);
-    Unix.close stdin;
     Unix.close out_fd;
     Unix.close err_fd;
-    input_fn stdout stderr;
+    select_io
+      ~input_stdout ~stdout
+      ~input_stderr ~stderr
+      ~output_stdin ~stdin
+      ~read_fds:[ stdout; stderr ] ~write_fds:[ stdin ];
+    (* stdin is closed when we run out of input *)
     Unix.close stdout;
     Unix.close stderr;
     let status = snd (waitpid_retry [Unix.WUNTRACED] pid) in
     Exit.of_unix status
 
-  let rec input_all_ lst ic =
-    let line = try Some (input_line ic) with End_of_file -> None in
-    match line with Some l -> input_all_ (l::lst) ic | None -> List.rev lst
-  let input_all = input_all_ []
+  let rec lines buf i acc =
+    match Bytes.rindex_from buf i '\n' with
+    | 0 -> Bytes.empty :: (Bytes.sub buf 1 i) :: acc
+    | j -> lines buf (j - 1) (Bytes.sub buf (j + 1) (i - j) :: acc)
+    | exception Not_found -> Bytes.sub buf 0 (i + 1) :: acc
+
+  let read_lines buf len into fd =
+    let n = Unix.read fd buf 0 len in
+    if n = 0
+    then true (* closed *)
+    else
+      let ls = lines buf (n - 1) [] in
+      begin match !into with
+        | [] -> into := List.rev ls
+        | partial_line::rest -> match ls with
+          | [] -> ()
+          | first::more ->
+            let first = Bytes.cat partial_line first in
+            into := List.rev_append more (first :: rest)
+      end;
+      false (* not closed *)
 
   let run ?(stdin=Bytes.empty) ?exit_status prog args =
     let out_lines = ref [] in
     let err_lines = ref [] in
-    let input_fn o_fd e_fd =
-      let oic = Unix.in_channel_of_descr o_fd in
-      out_lines := input_all oic;
-      let eic = Unix.in_channel_of_descr e_fd in
-      err_lines := input_all eic
+    let len = 4096 in
+    let buf = Bytes.create len in
+    let input_stdout = read_lines buf len out_lines in
+    let input_stderr = read_lines buf len err_lines in
+    let stdin_len = Bytes.length stdin in
+    let stdin_off = ref 0 in
+    let output_stdin i_fd =
+      let off = !stdin_off in
+      let len = stdin_len - off in
+      if len = 0
+      then begin
+        Unix.close i_fd;
+        true (* closed, we have nothing more to write *)
+      end
+      else
+        try
+          let n = Unix.single_write i_fd stdin off len in
+          stdin_off := off + n;
+          false (* not closed *)
+        with
+        | Unix.Unix_error (Unix.EPIPE, "single_write", _) -> true (* closed *)
     in
-    let exit_status' = execute prog args ~stdin input_fn in
+    let exit_status' =
+      execute prog args ~output_stdin ~input_stdout ~input_stderr
+    in
     (match exit_status with
      | None -> ()
      | Some exit_status -> Exit.check ~exit_status prog args exit_status'
     );
     let exit_status = exit_status' in
-    Output.({ exit_status; stdout = !out_lines; stderr = !err_lines; })
+    let stdout = List.rev_map Bytes.to_string !out_lines in
+    let stderr = List.rev_map Bytes.to_string !err_lines in
+    Output.({ exit_status; stdout; stderr; })
 
   let read_stdout ?stdin ?exit_status prog args =
     let exit_status = match exit_status with None -> [0] | Some v -> v in

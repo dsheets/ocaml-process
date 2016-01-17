@@ -65,6 +65,7 @@ module Exit : sig
 
   val to_string : t -> string
 
+  val error_to_string : error -> string
 end
 
 module Output : sig
