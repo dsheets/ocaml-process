@@ -223,11 +223,14 @@ module Blocking : S with type 'a io = 'a = struct
     let status = snd (waitpid_retry [Unix.WUNTRACED] pid) in
     Exit.of_unix status
 
+  let rindex_from buf i c =
+    try Some (Bytes.rindex_from buf i c) with Not_found -> None
+
   let rec lines buf i acc =
-    match Bytes.rindex_from buf i '\n' with
-    | 0 -> Bytes.empty :: (Bytes.sub buf 1 i) :: acc
-    | j -> lines buf (j - 1) (Bytes.sub buf (j + 1) (i - j) :: acc)
-    | exception Not_found -> Bytes.sub buf 0 (i + 1) :: acc
+    match rindex_from buf i '\n' with
+    | Some 0 -> Bytes.empty :: (Bytes.sub buf 1 i) :: acc
+    | Some j -> lines buf (j - 1) (Bytes.sub buf (j + 1) (i - j) :: acc)
+    | None -> Bytes.sub buf 0 (i + 1) :: acc
 
   let read_lines buf len into fd =
     let n = Unix.read fd buf 0 len in
