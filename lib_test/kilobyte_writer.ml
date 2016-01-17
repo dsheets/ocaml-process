@@ -1,3 +1,3 @@
-let megabyte = String.make 1024 ' '
+let kilobyte = String.make 1024 ' '
 ;;
-print_string megabyte
+print_string kilobyte
