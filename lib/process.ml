@@ -196,9 +196,13 @@ module Blocking : S with type 'a io = 'a = struct
             loop ~read_fds ~write_fds
           | [] -> failwith "select failed" (* TODO: ? *)
     in
-    let sigpipe = Sys.(signal sigpipe Signal_ignore) in
-    loop ~read_fds ~write_fds;
-    Sys.(set_signal sigpipe) sigpipe
+    try
+      let sigpipe = Sys.(signal sigpipe Signal_ignore) in
+      loop ~read_fds ~write_fds;
+      Sys.(set_signal sigpipe) sigpipe
+    with Invalid_argument _ ->
+      (* Can't ignore the pipe broken signal on Windows. *)
+      loop ~read_fds ~write_fds
 
   let execute prog args ~output_stdin ~input_stdout ~input_stderr =
     let in_fd, stdin = Unix.pipe () in
