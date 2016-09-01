@@ -5,7 +5,7 @@ MOD_NAME=process
 
 OCAMLBUILD=ocamlbuild -use-ocamlfind -classic-display
 
-TARGETS=.cma .cmxa
+TARGETS=.cma .cmxa .cmx
 
 PRODUCTS=$(addprefix $(MOD_NAME),$(TARGETS))
 
