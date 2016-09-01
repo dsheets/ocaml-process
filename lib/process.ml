@@ -237,7 +237,9 @@ module Blocking : S with type 'a io = 'a = struct
     | None -> Bytes.sub buf 0 (i + 1) :: acc
 
   let read_lines buf len into fd =
-    (* The EPIPE case covers an odd behavior on Windows. *)
+    (* The EPIPE case covers an odd behavior on Windows.
+       See <http://caml.inria.fr/mantis/view.php?id=7342>.
+    *)
     let n = Unix.(try read fd buf 0 len with Unix_error (EPIPE, _, _) -> 0) in
     if n = 0
     then true (* closed *)
