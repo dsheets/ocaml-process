@@ -1,8 +1,8 @@
 opam-version: "1.2"
 name: "process"
-version: "0.2.0"
+version: "0.2.1"
 maintainer: "David Sheets <sheets@alum.mit.edu>"
-authors: "David Sheets <sheets@alum.mit.edu>"
+authors: [ "David Sheets" "Jonathan Protzenko" ]
 homepage: "https://github.com/dsheets/ocaml-process"
 bug-reports: "https://github.com/dsheets/ocaml-process/issues"
 license: "ISC"
