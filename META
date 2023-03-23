@@ -1,8 +1,0 @@
-version = "0.2.1"
-description = "Easy process control"
-requires = "unix"
-archive(byte) = "process.cma"
-archive(byte, plugin) = "process.cma"
-archive(native) = "process.cmxa"
-archive(native, plugin) = "process.cmxs"
-exists_if = "process.cma"

@@ -1,5 +1,6 @@
 opam-version: "1.2"
 name: "process"
+synopsis: "Easy process control in OCaml"
 version: "0.2.1"
 maintainer: "David Sheets <sheets@alum.mit.edu>"
 authors: [ "David Sheets" "Jonathan Protzenko" ]
@@ -9,13 +10,10 @@ license: "ISC"
 dev-repo: "https://github.com/dsheets/ocaml-process.git"
 tags: [ "process" "subprocess" "command" "system" ]
 build: [
-  [make]
+  ["dune" "build" "-p" name "-j" jobs]
 ]
-install: [make "install"]
-remove: ["ocamlfind" "remove" "process"]
 depends: [
-  "ocamlfind" {build}
-  "ocamlbuild" {build}
+  "dune" {build}
   "base-unix"
   "base-bytes"
 ]

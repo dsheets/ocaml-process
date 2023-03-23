@@ -1,0 +1,58 @@
+(executable
+  (name megabyte_writer)
+  (modules megabyte_writer)
+)
+
+(executable
+  (name kilobyte_writer)
+  (modules kilobyte_writer)
+)
+
+(executable
+  (name empty_out)
+  (modules empty_out)
+)
+
+(executable
+  (name nl_out)
+  (modules nl_out)
+)
+
+(executable
+  (name trail_nl_out)
+  (modules trail_nl_out)
+)
+
+(executable
+  (name start_nl_out)
+  (modules start_nl_out)
+)
+
+(executable
+  (name interleave_err_out)
+  (modules interleave_err_out)
+)
+
+(executable
+  (name test)
+  (libraries
+    process
+    alcotest
+  )
+  (modules test)
+)
+
+(rule
+  (alias runtest)
+  (deps
+    megabyte_writer.exe
+    kilobyte_writer.exe
+    empty_out.exe
+    nl_out.exe
+    trail_nl_out.exe
+    start_nl_out.exe
+    interleave_err_out.exe
+    test.exe
+  )
+  (action (run ./test.exe))
+)
