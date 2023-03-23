@@ -24,12 +24,12 @@ module Pipes = struct
   let full_pipe () =
     let megabyte = Bytes.make (1024 * 1024) ' ' in
     Process.read_stdout
-      ~stdin:megabyte "./test_megabyte_writer.native" [||] |> ignore
+      ~stdin:megabyte "./megabyte_writer.exe" [||] |> ignore
 
   let broken_pipe () =
     let megabyte = Bytes.make (1024 * 1024) ' ' in
     Process.read_stdout
-      ~stdin:megabyte "./test_kilobyte_writer.native" [||] |> ignore
+      ~stdin:megabyte "./kilobyte_writer.exe" [||] |> ignore
 
   let tests = [
     "full_pipe",   `Quick, try_test full_pipe;
@@ -40,26 +40,26 @@ end
 module Reading = struct
 
   let empty () =
-    let output = Process.read_stdout "./test_empty_out.native" [||] in
+    let output = Process.read_stdout "./empty_out.exe" [||] in
     Alcotest.(check (list string)) "empty output" [] output
 
   let nl () =
-    let output = Process.read_stdout "./test_nl_out.native" [||] in
+    let output = Process.read_stdout "./nl_out.exe" [||] in
     Alcotest.(check (list string)) "newline output" ["";""] output
 
   let trail_nl () =
-    let output = Process.read_stdout "./test_trail_nl_out.native" [||] in
+    let output = Process.read_stdout "./trail_nl_out.exe" [||] in
     Alcotest.(check (list string)) "trailing newline output"
       ["hello, world";""] output
 
   let start_nl () =
-    let output = Process.read_stdout "./test_start_nl_out.native" [||] in
+    let output = Process.read_stdout "./start_nl_out.exe" [||] in
     Alcotest.(check (list string)) "starting newline output"
       [""; "hello, world"] output
 
   let interleave () =
     (* TODO: test the stderr, too *)
-    let output = Process.read_stdout "./test_interleave_err_out.native" [||] in
+    let output = Process.read_stdout "./interleave_err_out.exe" [||] in
     Alcotest.(check (list string)) "interleaved err and out output"
       ["longish"; "longerer"; "short"; ""] output
 

@@ -1,0 +1,13 @@
+(library
+ (name process)
+ (public_name process)
+ (libraries
+   unix
+ )
+)
+
+(env
+  (_
+    (flags (:standard -w -32-27))
+  )
+)
